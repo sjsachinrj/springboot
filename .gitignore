@@ -1,0 +1,10 @@
+*.d.ts
+/.gradle/
+/build/
+
+*.class
+/var/
+/log/
+*/build/
+/logs
+*/dist/
