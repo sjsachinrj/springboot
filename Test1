@@ -1,0 +1,73 @@
+import javax.wsdl.Definition
+import javax.wsdl.factory.WSDLFactory
+import javax.wsdl.PortType
+import javax.wsdl.Binding
+import javax.wsdl.Service
+import javax.wsdl.Operation
+
+fun main() {
+    // Example WSDL URL
+    val wsdlURL = "http://www.dneonline.com/calculator.asmx?wsdl"
+
+    try {
+        // Read the WSDL file from URL
+        val wsdlFactory: WSDLFactory = WSDLFactory.newInstance()
+        val wsdlReader = wsdlFactory.newWSDLReader()
+        val definition: Definition = wsdlReader.readWSDL(wsdlURL)
+
+        // Print the Definition object details
+        printDefinitionDetails(definition)
+
+    } catch (e: Exception) {
+        e.printStackTrace()
+    }
+}
+
+// Function to print the details of a WSDL Definition object
+fun printDefinitionDetails(definition: Definition) {
+    println("Target Namespace: ${definition.targetNamespace}")
+
+    // Print Services
+    definition.services.forEach { (serviceName, service) ->
+        println("Service: $serviceName")
+        (service as? Service)?.ports?.forEach { (portName, port) ->
+            println("  Port: $portName")
+            println("    Binding: ${port.binding}")
+            println("    Address: ${port.extensibilityElements}")
+        }
+    }
+
+    // Print Port Types
+    definition.portTypes.forEach { (portTypeName, portType) ->
+        println("Port Type: $portTypeName")
+        (portType as? PortType)?.operations?.forEach { operation ->
+            println("  Operation: ${operation.name}")
+            println("    Input: ${operation.input?.message}")
+            println("    Output: ${operation.output?.message}")
+            operation.faults.forEach { (faultName, fault) ->
+                println("    Fault: $faultName - ${fault.message}")
+            }
+        }
+    }
+
+    // Print Bindings
+    definition.bindings.forEach { (bindingName, binding) ->
+        println("Binding: $bindingName")
+        (binding as? Binding)?.bindingOperations?.forEach { bindingOperation ->
+            println("  Operation: ${bindingOperation.name}")
+            println("    Input Binding: ${bindingOperation.bindingInput}")
+            println("    Output Binding: ${bindingOperation.bindingOutput}")
+            bindingOperation.bindingFaults.forEach { (faultName, fault) ->
+                println("    Fault Binding: $faultName - ${fault}")
+            }
+        }
+    }
+
+    // Print Messages
+    definition.messages.forEach { (messageName, message) ->
+        println("Message: $messageName")
+        message.parts.forEach { (partName, part) ->
+            println("  Part: $partName - ${part.elementName ?: part.typeName}")
+        }
+    }
+}
