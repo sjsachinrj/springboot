@@ -1,0 +1,92 @@
+import org.apache.cxf.BusFactory
+import org.apache.cxf.wsdl.WSDLManagerImpl
+import org.apache.cxf.wsdl11.WSDLServiceBuilder
+import javax.wsdl.Definition
+import javax.wsdl.factory.WSDLFactory
+import kotlin.reflect.KClass
+import kotlin.reflect.full.memberProperties
+
+fun main() {
+    // Example WSDL URL
+    val wsdlURL = "http://www.dneonline.com/calculator.asmx?wsdl"
+
+    try {
+        // Initialize WSDLManager and WSDLServiceBuilder
+        val wsdlManager = WSDLManagerImpl()
+        val bus = BusFactory.getDefaultBus()
+        val wsdlServiceBuilder = WSDLServiceBuilder(bus)
+
+        // Read the WSDL file from URL
+        val wsdlFactory: WSDLFactory = WSDLFactory.newInstance()
+        val wsdlReader = wsdlFactory.newWSDLReader()
+        val definition: Definition = wsdlReader.readWSDL(wsdlURL)
+
+        // Print the Definition object recursively
+        printObject("Definition", definition)
+
+    } catch (e: Exception) {
+        e.printStackTrace()
+    }
+}
+
+// Function to print any object and its nested properties recursively
+fun printObject(name: String, obj: Any?, indent: String = "") {
+    if (obj == null) {
+        println("$indent$name: null")
+        return
+    }
+
+    val clazz: KClass<out Any> = obj::class
+    println("$indent$name: ${clazz.simpleName} {")
+
+    // Iterate through each property of the class
+    clazz.memberProperties.forEach { property ->
+        try {
+            val propertyName = property.name
+            val propertyValue = property.getter.call(obj)
+
+            when (propertyValue) {
+                is Collection<*> -> {
+                    println("$indent  $propertyName: [")
+                    propertyValue.forEach { element ->
+                        printObject("Element", element, "$indent    ")
+                    }
+                    println("$indent  ]")
+                }
+                is Map<*, *> -> {
+                    println("$indent  $propertyName: {")
+                    propertyValue.forEach { (key, value) ->
+                        println("$indent    Key: $key")
+                        printObject("Value", value, "$indent    ")
+                    }
+                    println("$indent  }")
+                }
+                else -> {
+                    if (propertyValue != null && !isPrimitive(propertyValue::class)) {
+                        printObject(propertyName, propertyValue, "$indent  ")
+                    } else {
+                        println("$indent  $propertyName: $propertyValue")
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            println("$indent  $propertyName: [Error reading property]")
+        }
+    }
+
+    println("$indent}")
+}
+
+// Helper function to determine if a class is primitive or a simple type
+fun isPrimitive(kclass: KClass<*>): Boolean {
+    return kclass.java.isPrimitive ||
+            kclass == String::class ||
+            kclass == Int::class ||
+            kclass == Long::class ||
+            kclass == Double::class ||
+            kclass == Float::class ||
+            kclass == Boolean::class ||
+            kclass == Char::class ||
+            kclass == Byte::class ||
+            kclass == Short::class
+}
